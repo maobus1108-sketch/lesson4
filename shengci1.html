@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>중국어 한어병음 마스터 - 단어 암기 게임</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap');
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background: linear-gradient(135deg, #f0fdf4 0%, #e0f2fe 100%);
+        }
+        ruby {
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: #0f172a;
+            display: inline-flex;
+            flex-direction: column-reverse;
+            align-items: center;
+            line-height: 1.1;
+        }
+        rt {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #059669;
+            margin-top: 4px;
+            letter-spacing: 0.05em;
+        }
+        .card-shadow {
+            box-shadow: 0 20px 30px -10px rgba(16, 185, 129, 0.1), 0 10px 15px -5px rgba(0, 0, 0, 0.04);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-xl rounded-3xl p-6 sm:p-8 card-shadow border border-emerald-100 text-center relative overflow-hidden" id="app-container">
+        
+        <!-- 상단 헤더 및 진행도 -->
+        <div class="flex justify-between items-center mb-6 border-b pb-4 border-slate-100">
+            <div>
+                <span class="bg-emerald-100 text-emerald-800 text-xs font-bold px-3 py-1.5 rounded-full" id="stage-badge">1단계: 병음 ➔ 뜻 선택</span>
+            </div>
+            <div class="text-sm font-bold text-slate-500" id="progress-text">1 / 21</div>
+        </div>
+
+        <div id="quiz-area">
+            <!-- 질문 상자 -->
+            <div class="bg-slate-50 rounded-2xl p-6 mb-6 border border-slate-100 min-h-[140px] flex flex-col justify-center items-center shadow-inner" id="question-box"></div>
+
+            <!-- 선택지 및 카드 매칭 컨테이너 -->
+            <div id="interaction-area"></div>
+        </div>
+
+        <!-- 해설 메시지 상자 -->
+        <div id="feedback-box" class="hidden mt-4 p-4 rounded-xl text-left text-sm border"></div>
+
+        <!-- 다음 버튼 -->
+        <button id="next-btn" class="hidden w-full mt-6 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 px-6 rounded-xl transition duration-200 shadow-md hover:shadow-lg">
+            다음 문제로 이동 ➔
+        </button>
+    </div>
+
+    <script>
+        // 이미지 속 10개 핵심 단어 데이터
+        const vocabList = [
+            { hanzi: "要", pinyin: "yào", mean: "~하려고 하다", wrongPinyins: ["yáo", "yǎo", "yāo"] },
+            { hanzi: "买", pinyin: "mǎi", mean: "사다", wrongPinyins: ["mái", "mài", "māi"] },
+            { hanzi: "瓶", pinyin: "píng", mean: "병[단위]", wrongPinyins: ["pǐng", "pìng", "pīng"] },
+            { hanzi: "牛奶", pinyin: "niúnǎi", mean: "우유", wrongPinyins: ["niúnái", "niǔnǎi", "níunǎi"] },
+            { hanzi: "和", pinyin: "hé", mean: "~와(과)", wrongPinyins: ["hè", "hě", "hē"] },
+            { hanzi: "一些", pinyin: "yìxiē", mean: "조금, 약간", wrongPinyins: ["yīxiē", "yíxiē", "yìxiě"] },
+            { hanzi: "水果", pinyin: "shuǐguǒ", mean: "과일", wrongPinyins: ["shuíguǒ", "shuǐguó", "shuǐguō"] },
+            { hanzi: "送", pinyin: "sòng", mean: "주다, 증정하다", wrongPinyins: ["sǒng", "sóng", "sōng"] },
+            { hanzi: "啊", pinyin: "a", mean: "[부드러운 어감]", wrongPinyins: ["ā", "á", "ǎ"] },
+            { hanzi: "咱们", pinyin: "zánmen", mean: "우리[듣는 사람 포함]", wrongPinyins: ["zhánmen", "zǎnmen", "zánmén"] }
+        ];
+
+        // 상태 변수
+        let currentStage = 1;
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let totalQuestions = 0;
+        let startTime = null;
+        let selectedCards = [];
+        let matchedCount = 0;
+
+        let questionsStage1 = [];
+        let questionsStage2 = [];
+        let questionsStage3 = [];
+
+        function initGame() {
+            // Stage 1: 병음 중심 ➔ 한국어 뜻 찾기 (10문항)
+            questionsStage1 = vocabList.map(item => {
+                let options = [item.mean];
+                while (options.length < 4) {
+                    let rand = vocabList[Math.floor(Math.random() * vocabList.length)].mean;
+                    if (!options.includes(rand)) options.push(rand);
+                }
+                options.sort(() => Math.random() - 0.5);
+                return {
+                    pinyin: item.pinyin,
+                    hanzi: item.hanzi,
+                    correct: item.mean,
+                    options: options,
+                    exp: `<b>${item.hanzi}</b> [${item.pinyin}] 의 뜻은 <b>'${item.mean}'</b>입니다.`
+                };
+            }).sort(() => Math.random() - 0.5);
+
+            // Stage 2: 한자 및 뜻 ➔ 정확한 병음/성조 찾기 (10문항)
+            questionsStage2 = vocabList.map(item => {
+                let options = [item.pinyin, ...item.wrongPinyins];
+                options.sort(() => Math.random() - 0.5);
+                return {
+                    hanzi: item.hanzi,
+                    mean: item.mean,
+                    correct: item.pinyin,
+                    options: options,
+                    exp: `<b>'${item.mean}'</b>의 올바른 한어병음 및 성조 표기는 <b>'${item.pinyin}'</b> (${item.hanzi}) 입니다.`
+                };
+            }).sort(() => Math.random() - 0.5);
+
+            // Stage 3는 1개의 세트 (6쌍 매칭)
+            totalQuestions = questionsStage1.length + questionsStage2.length + 1;
+            startTime = new Date();
+
+            document.getElementById("next-btn").addEventListener("click", handleNext);
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            const feedback = document.getElementById("feedback-box");
+            const nextBtn = document.getElementById("next-btn");
+            feedback.classList.add("hidden");
+            feedback.innerHTML = "";
+            nextBtn.classList.add("hidden");
+
+            if (currentStage === 1) {
+                if (currentQuestionIndex >= questionsStage1.length) {
+                    currentStage = 2;
+                    currentQuestionIndex = 0;
+                    loadQuestion();
+                    return;
+                }
+                renderStage1();
+            } else if (currentStage === 2) {
+                if (currentQuestionIndex >= questionsStage2.length) {
+                    currentStage = 3;
+                    currentQuestionIndex = 0;
+                    loadQuestion();
+                    return;
+                }
+                renderStage2();
+            } else if (currentStage === 3) {
+                renderStage3();
+            }
+        }
+
+        function renderStage1() {
+            const q = questionsStage1[currentQuestionIndex];
+            const qNum = currentQuestionIndex + 1;
+            
+            document.getElementById("stage-badge").innerText = "1단계: 병음 ➔ 뜻 선택";
+            document.getElementById("progress-text").innerText = `${qNum} / ${totalQuestions}`;
+
+            document.getElementById("question-box").innerHTML = `
+                <div class="mb-3">
+                    <ruby>${q.hanzi}<rt>${q.pinyin}</rt></ruby>
+                </div>
+                <div class="text-xs text-slate-400 font-medium">위 병음과 한자에 맞는 한국어 뜻을 고르세요.</div>
+            `;
+
+            const interactionArea = document.getElementById("interaction-area");
+            interactionArea.innerHTML = "";
+            const grid = document.createElement("div");
+            grid.className = "grid grid-cols-1 gap-3";
+
+            q.options.forEach(opt => {
+                const btn = document.createElement("button");
+                btn.className = "opt-btn bg-white hover:bg-emerald-50 border-2 border-slate-200 text-slate-700 font-bold py-3.5 px-5 rounded-xl text-base transition duration-150 text-left flex justify-between items-center";
+                btn.innerHTML = `
+                    <span>${opt}</span>
+                    <span class="w-5 h-5 rounded-full border border-slate-300 inline-block pointer-events-none"></span>
+                `;
+                btn.addEventListener("click", () => checkChoiceAnswer(btn, opt, q.correct, q.exp));
+                grid.appendChild(btn);
+            });
+
+            interactionArea.appendChild(grid);
+        }
+
+        function renderStage2() {
+            const q = questionsStage2[currentQuestionIndex];
+            const qNum = questionsStage1.length + currentQuestionIndex + 1;
+
+            document.getElementById("stage-badge").innerText = "2단계: 정확한 병음/성조 찾기";
+            document.getElementById("progress-text").innerText = `${qNum} / ${totalQuestions}`;
+
+            document.getElementById("question-box").innerHTML = `
+                <div class="text-3xl font-extrabold text-slate-800 mb-1">${q.hanzi}</div>
+                <div class="text-emerald-600 font-bold text-lg mb-2">${q.mean}</div>
+                <div class="text-xs text-slate-400">올바른 한어병음(성조) 표기를 고르세요.</div>
+            `;
+
+            const interactionArea = document.getElementById("interaction-area");
+            interactionArea.innerHTML = "";
+            const grid = document.createElement("div");
+            grid.className = "grid grid-cols-2 gap-3";
+
+            q.options.forEach(opt => {
+                const btn = document.createElement("button");
+                btn.className = "opt-btn bg-white hover:bg-emerald-50 border-2 border-slate-200 text-emerald-800 font-extrabold py-4 px-4 rounded-xl text-xl transition duration-150 text-center";
+                btn.innerText = opt;
+                btn.addEventListener("click", () => checkChoiceAnswer(btn, opt, q.correct, q.exp));
+                grid.appendChild(btn);
+            });
+
+            interactionArea.appendChild(grid);
+        }
+
+        function renderStage3() {
+            document.getElementById("stage-badge").innerText = "3단계: 병음-한자 카드 매칭";
+            document.getElementById("progress-text").innerText = `${totalQuestions} / ${totalQuestions}`;
+
+            document.getElementById("question-box").innerHTML = `
+                <div class="text-lg font-bold text-slate-800 mb-1">한어병음 카드와 한자/뜻 카드를 매칭하세요!</div>
+                <div class="text-xs text-slate-500">알맞은 짝을 이루는 카드를 2개 선택하면 제거됩니다.</div>
+            `;
+
+            const selectedVocab = [...vocabList].sort(() => Math.random() - 0.5).slice(0, 6);
+            
+            let pinyinCards = selectedVocab.map(v => ({ id: v.hanzi, content: v.pinyin, isPinyin: true }));
+            let hanziCards = selectedVocab.map(v => ({ 
+                id: v.hanzi, 
+                content: `<div class="text-xl font-bold">${v.hanzi}</div><div class="text-xs text-slate-500">${v.mean}</div>`,
+                isPinyin: false 
+            }));
+
+            let allCards = [...pinyinCards, ...hanziCards].sort(() => Math.random() - 0.5);
+
+            const interactionArea = document.getElementById("interaction-area");
+            interactionArea.innerHTML = "";
+            const grid = document.createElement("div");
+            grid.className = "grid grid-cols-3 gap-3";
+
+            allCards.forEach(card => {
+                const btn = document.createElement("button");
+                btn.className = "match-card bg-white border-2 border-slate-200 hover:border-emerald-400 rounded-xl p-3 flex flex-col justify-center items-center min-h-[90px] transition duration-200";
+                btn.setAttribute("data-id", card.id);
+                if (card.isPinyin) {
+                    btn.innerHTML = `<span class="font-extrabold text-emerald-700 text-lg">${card.content}</span>`;
+                } else {
+                    btn.innerHTML = card.content;
+                }
+                btn.addEventListener("click", () => handleCardClick(btn));
+                grid.appendChild(btn);
+            });
+
+            interactionArea.appendChild(grid);
+            matchedCount = 0;
+            selectedCards = [];
+        }
+
+        function checkChoiceAnswer(btnElement, selected, correct, exp) {
+            const allBtns = document.querySelectorAll('.opt-btn');
+            allBtns.forEach(b => b.disabled = true);
+
+            const feedback = document.getElementById("feedback-box");
+            feedback.classList.remove("hidden");
+
+            if (selected === correct) {
+                btnElement.classList.remove('bg-white', 'border-slate-200');
+                btnElement.classList.add('bg-emerald-500', 'text-white', 'border-emerald-500');
+                feedback.className = "mt-4 p-4 rounded-xl text-left text-sm border bg-emerald-50 border-emerald-200 text-emerald-800";
+                feedback.innerHTML = `<b>🎉 정답입니다!</b><br>${exp}`;
+                score++;
+            } else {
+                btnElement.classList.remove('bg-white', 'border-slate-200');
+                btnElement.classList.add('bg-rose-500', 'text-white', 'border-rose-500');
+                
+                allBtns.forEach(b => {
+                    if (b.innerText.trim().startsWith(correct) || b.innerText.trim() === correct) {
+                        b.classList.remove('bg-white', 'border-slate-200');
+                        b.classList.add('bg-emerald-100', 'border-emerald-400', 'text-emerald-800');
+                    }
+                });
+
+                feedback.className = "mt-4 p-4 rounded-xl text-left text-sm border bg-rose-50 border-rose-200 text-rose-800";
+                feedback.innerHTML = `<b>❌ 오답입니다.</b><br>${exp}`;
+            }
+
+            document.getElementById("next-btn").classList.remove("hidden");
+        }
+
+        function handleCardClick(btn) {
+            if (btn.style.visibility === "hidden" || selectedCards.includes(btn)) return;
+
+            btn.classList.remove('border-slate-200');
+            btn.classList.add('border-emerald-500', 'bg-emerald-50');
+            selectedCards.push(btn);
+
+            if (selectedCards.length === 2) {
+                const [card1, card2] = selectedCards;
+                const id1 = card1.getAttribute('data-id');
+                const id2 = card2.getAttribute('data-id');
+
+                if (id1 === id2 && card1 !== card2) {
+                    setTimeout(() => {
+                        card1.style.visibility = "hidden";
+                        card2.style.visibility = "hidden";
+                        selectedCards = [];
+                        matchedCount++;
+                        if (matchedCount === 6) {
+                            score += 5;
+                            showFinalResult();
+                        }
+                    }, 250);
+                } else {
+                    setTimeout(() => {
+                        card1.classList.remove('border-emerald-500', 'bg-emerald-50');
+                        card2.classList.remove('border-emerald-500', 'bg-emerald-50');
+                        card1.classList.add('border-slate-200');
+                        card2.classList.add('border-slate-200');
+                        selectedCards = [];
+                    }, 400);
+                }
+            }
+        }
+
+        function handleNext() {
+            currentQuestionIndex++;
+            loadQuestion();
+        }
+
+        function showFinalResult() {
+            const endTime = new Date();
+            const totalSeconds = Math.max(1, Math.floor((endTime - startTime) / 1000));
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = totalSeconds % 60;
+
+            const timeString = minutes > 0 ? `${minutes}분 ${seconds}초` : `${seconds}초`;
+            const maxScore = questionsStage1.length + questionsStage2.length + 5;
+            const accuracy = Math.round((score / maxScore) * 100);
+
+            const appContainer = document.getElementById("app-container");
+            appContainer.innerHTML = `
+                <div class="py-6">
+                    <div class="text-5xl mb-4">🏆</div>
+                    <h2 class="text-2xl font-extrabold text-slate-800 mb-2">학습 완료! 수고하셨습니다</h2>
+                    <p class="text-sm text-slate-500 mb-6">한어병음과 성조 복습을 성공적으로 끝마쳤습니다.</p>
+
+                    <div class="bg-slate-50 rounded-2xl p-6 border border-slate-100 mb-6 text-left space-y-3">
+                        <div class="flex justify-between items-center border-b pb-2 border-slate-200">
+                            <span class="text-slate-600 font-medium">⏱️ 총 소요 시간</span>
+                            <span class="font-extrabold text-emerald-600 text-lg">${timeString}</span>
+                        </div>
+                        <div class="flex justify-between items-center border-b pb-2 border-slate-200">
+                            <span class="text-slate-600 font-medium">🎯 최종 점수</span>
+                            <span class="font-extrabold text-slate-800 text-lg">${score} / ${maxScore}점</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-slate-600 font-medium">📈 성취도</span>
+                            <span class="font-extrabold text-emerald-600 text-lg">${accuracy}%</span>
+                        </div>
+                    </div>
+
+                    <button class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 px-6 rounded-xl transition duration-200 shadow-md" onclick="location.reload()">
+                        🔄 다시 학습하기
+                    </button>
+                </div>
+            `;
+        }
+
+        // 실행
+        window.onload = initGame;
+    </script>
+</body>
+</html>
