@@ -1,4 +1,3 @@
-# lesson4
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -356,4 +355,23 @@
                         </div>
                         <div class="flex justify-between items-center border-b pb-2 border-slate-200">
                             <span class="text-slate-600 font-medium">🎯 최종 점수</span>
-                            <span class="font-extrabold 
+                            <span class="font-extrabold text-slate-800 text-lg">${score} / ${maxScore}점</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-slate-600 font-medium">📈 성취도</span>
+                            <span class="font-extrabold text-emerald-600 text-lg">${accuracy}%</span>
+                        </div>
+                    </div>
+
+                    <button class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 px-6 rounded-xl transition duration-200 shadow-md" onclick="location.reload()">
+                        🔄 다시 학습하기
+                    </button>
+                </div>
+            `;
+        }
+
+        // 실행
+        window.onload = initGame;
+    </script>
+</body>
+</html>
