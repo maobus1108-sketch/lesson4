@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>중국어 게임방</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&family=Noto+Serif+SC:wght@600;900&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#EEF3F2;--fg:#13242B;--mut:#5B6F75;--card:#FFFFFF;--line:#C9D6D4;--jade:#0E7C6B;--on:#FFFFFF;--bad:#B4361F;--gold:#E3A92B;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0F1B20;--fg:#E6EFEE;--mut:#93A6AB;--card:#172A31;--line:#2A4149;--jade:#3CC0A8;--on:#06201B;--bad:#F08A72;--gold:#F0BF4F;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0F1B20;--fg:#E6EFEE;--mut:#93A6AB;--card:#172A31;--line:#2A4149;--jade:#3CC0A8;--on:#06201B;--bad:#F08A72;--gold:#F0BF4F;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+html,body{margin:0}
+body{background:var(--bg);color:var(--fg);font:16px/1.5 'Noto Sans KR',system-ui,sans-serif}
+main{max-width:520px;margin:0 auto;padding:20px 16px 48px}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:3px solid var(--jade);outline-offset:2px}
+.h{font-family:'Noto Serif SC','Noto Serif KR',serif}
+h1{font-size:28px;margin:8px 0 4px}
+.mut{color:var(--mut);margin:0 0 20px}
+input{width:100%;box-sizing:border-box;font:inherit;padding:12px 14px;border:2px solid var(--line);border-radius:10px;background:var(--card);color:var(--fg);margin-bottom:6px}
+input.err{border-color:var(--bad)}
+.row{display:flex;align-items:center;gap:16px;width:100%;text-align:left;background:var(--card);border:2px solid var(--line);border-radius:14px;padding:14px 16px;margin-top:12px}
+.row:hover{border-color:var(--jade)}
+.g{font-size:44px;font-weight:900;color:var(--jade);width:56px;text-align:center;line-height:1}
+.row small{color:var(--mut)}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;color:var(--mut)}
+.link{background:none;border:0;padding:6px 0;color:var(--mut);text-decoration:underline}
+.prog{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-bottom:20px}
+.prog i{display:block;height:100%;background:var(--jade);transition:width .3s}
+.q{text-align:center;padding:18px 0 22px}
+.big{font-size:72px;font-weight:900;line-height:1.15}
+.qt{font-size:30px;font-weight:600}
+.sub{color:var(--mut);margin:8px 0 0}
+.opts{display:grid;gap:10px}
+.opt{background:var(--card);border:2px solid var(--line);border-radius:12px;padding:14px;font-size:20px;text-align:center}
+.opt:hover:not(:disabled){border-color:var(--jade)}
+.opt.ok{background:var(--jade);border-color:var(--jade);color:var(--on)}
+.opt.no{border-color:var(--bad);color:var(--bad)}
+.snd{display:block;margin:0 auto 10px;background:var(--jade);color:var(--on);border:0;border-radius:999px;padding:14px 26px;font-size:20px;font-weight:700}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.card{min-height:76px;background:var(--card);border:2px solid var(--line);border-radius:12px;padding:6px;font-size:17px;display:flex;align-items:center;justify-content:center;text-align:center}
+.card.z{flex-direction:column;gap:2px}.card.z .pp{font-size:19px;font-weight:700}.card.z .hz{font-size:24px;font-weight:900;line-height:1.2}
+.pn{font-size:30px;font-weight:700;margin-top:4px}
+.card.sel{border-color:var(--jade);box-shadow:0 0 0 2px var(--jade)}
+.card.done{background:var(--jade);border-color:var(--jade);color:var(--on);opacity:.55}
+.card.bad{border-color:var(--bad)}
+.res{background:var(--card);border:2px solid var(--line);border-radius:16px;padding:22px;text-align:center}
+.res.perfect{border-color:var(--gold);border-width:4px}
+.star{font-size:30px;font-weight:700;color:var(--gold);margin:0 0 6px}
+.score{font-size:56px;font-weight:900;line-height:1.1;margin:6px 0}
+dl{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;text-align:left;margin:16px 0 0;padding-top:14px;border-top:1px solid var(--line)}
+dt{color:var(--mut)}dd{margin:0;font-weight:700;text-align:right}
+.code{font:700 26px/1.2 ui-monospace,Menlo,monospace;letter-spacing:.12em}
+.btn{width:100%;margin-top:12px;padding:14px;border-radius:12px;border:2px solid var(--jade);background:var(--jade);color:var(--on);font-weight:700}
+.btn.alt{background:none;color:var(--fg);border-color:var(--line)}
+.note{font-size:14px;color:var(--mut);margin-top:10px}
+@media (prefers-reduced-motion:reduce){.prog i{transition:none}}
+</style>
+</head>
+<body>
+<main id="app"></main>
+<script>
+// 단어 목록: h=한자, p=병음(성조 숫자, 5=경성), k=뜻. 수업 단원에 맞게 바꿔 쓰세요.
+const W=[
+{h:'件',p:'jian4',k:'벌[단위]'},{h:'红色',p:'hong2 se4',k:'빨간색'},
+{h:'衣服',p:'yi1 fu5',k:'옷'},{h:'明年',p:'ming2 nian2',k:'내년'},
+{h:'中国',p:'zhong1 guo2',k:'중국'},{h:'旅游',p:'lv3 you2',k:'여행하다'},
+{h:'穿',p:'chuan1',k:'신다'},{h:'这',p:'zhe4',k:'이, 이것'},
+{h:'双',p:'shuang1',k:'켤레[단위]'},{h:'鞋',p:'xie2',k:'신발'}];
+
+const app=document.getElementById('app');
+const sh=a=>[...a].sort(()=>Math.random()-.5);
+const esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const MK={a:'āáǎà',e:'ēéěè',i:'īíǐì',o:'ōóǒò',u:'ūúǔù',v:'ǖǘǚǜ'};
+function py(s){return s.split(' ').map(x=>{const n=+x.slice(-1),b=x.slice(0,-1);if(n==5)return b.replace('v','ü');
+const v=b.includes('a')?'a':b.includes('e')?'e':b.includes('ou')?'o':[...b].reverse().find(c=>'iouv'.includes(c));
+return b.replace(v,MK[v][n-1])}).join('')}
+function vars(s){const sy=s.split(' '),out=new Set([s]);let t=0;
+while(out.size<4&&t++<60){const c=[...sy],i=Math.floor(Math.random()*c.length);
+if(+c[i].slice(-1)==5)continue;c[i]=c[i].slice(0,-1)+(1+Math.floor(Math.random()*4));out.add(c.join(' '))}
+return sh([...out])}
+const others=(w,n)=>sh(W.filter(x=>x!==w)).slice(0,n);
+const LB=['짝맞추기','퀴즈','짝맞추기','퀴즈'];
+let name='',start=0,clk=null,stg='',sc=0,tot=0,run=0;
+
+function go(html){clearInterval(clk);app.innerHTML=html;window.scrollTo(0,0)}
+function home(){run++;
+go(`<h1 class="h">중국어 단어 게임</h1><p class="mut">실력 쌓기 – 단어 익히기(68쪽)<br>짝맞추기와 퀴즈, 4단계를 차례로 풀어요. 끝나면 결과 화면을 선생님께 보여 주세요.</p>
+<input id="nm" placeholder="이름 (예: 3학년 2반 김하늘)" maxlength="20" value="${esc(name)}" aria-label="이름">
+<button class="btn" id="go">게임 시작</button>`);
+const nm=document.getElementById('nm');
+document.getElementById('go').onclick=()=>{name=nm.value.trim();
+ if(!name){nm.classList.add('err');nm.placeholder='이름을 먼저 입력하세요';nm.focus();return}
+ play()}}
+
+function head(i,n,extra){return `<div class="top"><button class="link" id="bk">← 처음으로</button><span>${stg}${extra||(i+1)+' / '+n}</span></div>
+<div class="prog"><i style="width:${(i/n)*100}%"></i></div>`}
+function bindBk(){document.getElementById('bk').onclick=home}
+
+function mc(qs,done){const my=run;let i=0,c=0;
+(function show(){
+ if(i==qs.length)return done(c,qs.length);
+ const q=qs[i];
+ go(head(i,qs.length)+`<section class="q">${q.big?`<div class="h big">${q.q}</div>`:`<div class="qt h">${q.q}</div>`}${q.pn?`<div class="pn">${q.pn}</div>`:''}${q.sub?`<p class="sub">${q.sub}</p>`:''}</section>
+ <div class="opts">${q.opts.map((o,j)=>`<button class="opt" data-j="${j}">${o.l}</button>`).join('')}</div>`);
+ bindBk();
+ const bs=[...app.querySelectorAll('.opt')];
+ bs.forEach(b=>b.onclick=()=>{
+  const o=q.opts[+b.dataset.j];bs.forEach(x=>x.disabled=true);
+  if(o.v===q.ans){c++;b.classList.add('ok')}else{b.classList.add('no');bs.find(x=>q.opts[+x.dataset.j].v===q.ans).classList.add('ok')}
+  if(q.rv)app.querySelector('.q').insertAdjacentHTML('beforeend',q.rv);
+  setTimeout(()=>{if(my!==run)return;i++;show()},q.rv?1700:900)})})()}
+
+function match(ws,done){const my=run;let sel=null,mis=0,left=ws.length;
+ const cs=sh([...ws.map(w=>({id:w.h,t:w.h,pp:py(w.p),z:1})),...ws.map(w=>({id:w.h,t:w.k}))]);
+ go(head(0,1,'실수 0번')+`<div class="grid" style="grid-template-columns:repeat(2,1fr)">${cs.map((c,i)=>`<button class="card${c.z?' h z':''}" data-i="${i}">${c.z?`<span class="pp">${c.pp}</span><span class="hz">${c.t}</span>`:c.t}</button>`).join('')}</div>`);
+ bindBk();
+ const bs=[...app.querySelectorAll('.card')],top=app.querySelector('.top span'),bar=app.querySelector('.prog i');
+ bs.forEach(b=>b.onclick=()=>{
+  if(b.classList.contains('done')||b===sel)return;
+  if(!sel){sel=b;b.classList.add('sel');return}
+  const a=cs[+sel.dataset.i],c=cs[+b.dataset.i];
+  if(a.id===c.id&&!!a.z!==!!c.z){sel.classList.remove('sel');sel.classList.add('done');b.classList.add('done');sel=null;
+   left--;bar.style.width=((ws.length-left)/ws.length*100)+'%';
+   if(left==0)setTimeout(()=>{if(my===run)done(Math.max(0,ws.length-mis),ws.length)},600)}
+  else{mis++;top.textContent=stg+'실수 '+mis+'번';const s=sel;sel=null;s.classList.remove('sel');
+   [s,b].forEach(x=>x.classList.add('bad'));setTimeout(()=>[s,b].forEach(x=>x.classList.remove('bad')),500)}})}
+
+const qMean=l=>l.map(w=>({q:w.h,big:1,pn:py(w.p),sub:'알맞은 뜻은?',
+ opts:sh([w,...others(w,3)]).map(x=>({v:x.h,l:x.k})),ans:w.h}));
+const qPy=l=>l.map(w=>({q:w.k,sub:'알맞은 한어병음은?',opts:vars(w.p).map(v=>({v,l:py(v)})),ans:w.p,
+ rv:'<p class="sub"><b class="h">'+w.h+'</b> '+py(w.p)+'</p>'}));
+function play(){const ws=sh(W),A=ws.slice(0,5),B=ws.slice(5);run++;sc=0;tot=0;start=Date.now();
+ const st=[d=>match(A,d),d=>mc(qPy(A),d),d=>match(B,d),d=>mc(qMean(B),d)];
+ (function nx(i){if(i==st.length)return finish();
+  stg=`${i+1}/${st.length} ${LB[i]} · `;st[i]((s,t)=>{sc+=s;tot+=t;nx(i+1)})})(0)}
+
+function codeOf(s){let h=0;for(const c of s)h=(h*31+c.charCodeAt(0))>>>0;return h.toString(36).toUpperCase().padStart(6,'0').slice(-6)}
+const p2=n=>String(n).padStart(2,'0');
+const stamp=d=>`${d.getMonth()+1}/${d.getDate()} ${p2(d.getHours())}:${p2(d.getMinutes())}:${p2(d.getSeconds())}`;
+
+function finish(){
+ const end=new Date(),sec=Math.round((end-start)/1000),perfect=sc==tot;
+ const t=`${Math.floor(sec/60)}분 ${sec%60}초`,code=codeOf([name,sc,stamp(end)].join('|'));
+ go(`<div class="res${perfect?' perfect':''}">${perfect?'<p class="star">★ 만점 ★</p>':''}
+ <div class="mut" style="margin:0">짝맞추기 + 퀴즈 4단계</div><div class="score h">${sc} / ${tot}</div>
+ <dl><dt>이름</dt><dd>${esc(name)}</dd><dt>걸린 시간</dt><dd>${t}</dd><dt>완료 시각</dt><dd>${stamp(end)}</dd>
+ <dt>지금 시각</dt><dd id="clk"></dd><dt>확인 코드</dt><dd class="code">${code}</dd></dl>
+ <p class="note">이 화면을 선생님께 보여 주세요. 지금 시각이 계속 바뀌는 화면만 인정돼요.</p></div>
+ <button class="btn" id="again">처음부터 다시 하기</button><button class="btn alt" id="hm">처음으로</button>`);
+ const tick=()=>document.getElementById('clk').textContent=stamp(new Date());tick();clk=setInterval(tick,1000);
+ document.getElementById('again').onclick=play;
+ document.getElementById('hm').onclick=home}
+
+home();
+</script>
+</body>
+</html>
