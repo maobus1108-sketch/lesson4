@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>중국어 양사 마스터 - 아기곰의 강 건너기</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+SC:wght@500;700;900&family=Noto+Sans+KR:wght@500;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            user-select: none;
+            overflow-x: hidden;
+            background: linear-gradient(180deg, #bbf2f6 0%, #e0f2fe 30%, #38bdf8 100%);
+        }
+        .font-game {
+            font-family: 'Jua', 'Noto Sans KR', sans-serif;
+        }
+        .font-chinese {
+            font-family: 'Noto Sans SC', sans-serif;
+        }
+        ruby {
+            display: inline-flex;
+            flex-direction: column-reverse;
+            vertical-align: middle;
+            text-align: center;
+            line-height: 1;
+        }
+        rt {
+            font-size: 0.85em;
+            line-height: 1.1;
+            font-weight: 700;
+            color: #d97706;
+            margin-top: 2px;
+            font-family: 'Noto Sans SC', sans-serif;
+        }
+        .ruby-large ruby {
+            font-size: 3.2rem;
+            font-weight: 900;
+        }
+        .ruby-large rt {
+            font-size: 1.25rem;
+            color: #b45309;
+            margin-top: 4px;
+        }
+        .ruby-boat ruby {
+            font-size: 1.7rem;
+            font-weight: 800;
+        }
+        .ruby-boat rt {
+            font-size: 0.85rem;
+            color: #0369a1;
+        }
+
+        /* 물결 출렁임 애니메이션 */
+        @keyframes waveFloat {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-8px) rotate(1.2deg); }
+        }
+        @keyframes riverFlow {
+            0% { background-position: 0 0; }
+            100% { background-position: 1000px 0; }
+        }
+        .animate-boat {
+            animation: waveFloat 2.6s ease-in-out infinite;
+        }
+        .river-bg {
+            background: repeating-linear-gradient(
+                -45deg,
+                rgba(255, 255, 255, 0.15) 0px,
+                rgba(255, 255, 255, 0.15) 20px,
+                transparent 20px,
+                transparent 40px
+            );
+        }
+
+        /* 곰돌이 점프 애니메이션 */
+        @keyframes bearJumpSuccess {
+            0% { transform: translate(0, 0) scale(1); }
+            45% { transform: translate(var(--target-x), calc(var(--target-y) - 70px)) scale(1.15) rotate(5deg); }
+            80% { transform: translate(var(--target-x), var(--target-y)) scale(0.95); }
+            100% { transform: translate(var(--target-x), var(--target-y)) scale(1); }
+        }
+        .jumping-bear {
+            animation: bearJumpSuccess 0.85s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+            z-index: 50;
+        }
+
+        /* 보트 침몰 애니메이션 */
+        @keyframes sinkBoat {
+            0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+            40% { transform: translateY(20px) rotate(-14deg); opacity: 0.9; }
+            70% { transform: translateY(55px) rotate(20deg) scale(0.85); opacity: 0.6; }
+            100% { transform: translateY(110px) rotate(32deg) scale(0.5); opacity: 0; pointer-events: none; }
+        }
+        .sinking {
+            animation: sinkBoat 1.1s cubic-bezier(0.4, 0, 0.2, 1) forwards !important;
+        }
+
+        /* 배 순항(아기곰을 태우고 강을 건너 저편으로 이동) */
+        @keyframes sailAcrossRiver {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            20% { transform: translate(15px, -15px) rotate(2deg); }
+            40% { transform: translate(60px, -45px) rotate(-2deg); }
+            70% { transform: translate(180px, -120px) rotate(3deg) scale(0.9); }
+            100% { transform: translate(380px, -240px) rotate(4deg) scale(0.7); opacity: 0.1; }
+        }
+        .sailing-across {
+            animation: sailAcrossRiver 1.4s cubic-bezier(0.38, 0, 0.2, 1) forwards !important;
+        }
+
+        /* 배 선체 3D 그림자 효과 */
+        .boat-hull-shadow {
+            filter: drop-shadow(0 12px 14px rgba(12, 74, 110, 0.35));
+        }
+
+        /* 거품 애니메이션 */
+        @keyframes bubbleUp {
+            0% { transform: translateY(0) scale(0.6); opacity: 0; }
+            50% { opacity: 0.9; }
+            100% { transform: translateY(-40px) scale(1.2); opacity: 0; }
+        }
+        .bubble {
+            animation: bubbleUp 0.8s ease-out forwards;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-between p-2 sm:p-4 text-slate-800">
+
+    <header class="w-full max-w-2xl bg-white/90 backdrop-blur-md rounded-2xl shadow-lg px-4 py-3 border border-sky-100 flex justify-between items-center z-20 mt-1">
+        <div class="flex items-center gap-2">
+            <span class="text-2xl">🐻</span>
+            <div>
+                <h1 class="font-game text-lg sm:text-xl text-sky-800 leading-tight">아기곰의 양사 강 건너기</h1>
+                <p class="text-xs text-slate-500">양사에 꼭 맞는 명사 배를 골라 타세요!</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-3">
+            <div class="bg-amber-50 border border-amber-200 px-3 py-1 rounded-xl text-center">
+                <span class="text-xs text-amber-800 font-bold block">진행도</span>
+                <span id="progress-text" class="font-game text-base text-amber-900 font-bold">1 / 8</span>
+            </div>
+            <div class="bg-sky-50 border border-sky-200 px-3 py-1 rounded-xl text-center min-w-[70px]">
+                <span class="text-xs text-sky-800 font-bold block">점수</span>
+                <span id="score-text" class="font-game text-base text-sky-900 font-bold">0점</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="w-full max-w-2xl relative my-3 flex-1 flex flex-col justify-between bg-gradient-to-b from-emerald-100 via-sky-300 to-sky-500 rounded-3xl shadow-2xl border-4 border-white overflow-hidden min-h-[580px] sm:min-h-[640px]">
+        
+        <!-- 강둑 배경 장식 (상단 강변 잔디) -->
+        <div class="w-full bg-emerald-400 border-b-8 border-emerald-500/80 px-4 pt-4 pb-6 relative z-10 shadow-md">
+            <div class="flex justify-between items-center text-xs text-emerald-950 font-bold mb-1 opacity-80">
+                <span>🌱 출발 강둑</span>
+                <span>목표: 건너편 강가로 이동 🌊</span>
+            </div>
+            
+            <!-- 곰돌이와 양사 표지판 구역 -->
+            <div class="relative flex flex-col items-center justify-center pt-1" id="bear-island">
+                <!-- 아기곰 캐릭터 & 양사 표지판 -->
+                <div id="bear-actor" class="relative transition-all duration-300 flex flex-col items-center cursor-pointer">
+                    <!-- 양사 말풍선/표지판 -->
+                    <div class="bg-amber-100 border-4 border-amber-500 shadow-xl rounded-2xl px-5 py-2.5 mb-1.5 flex flex-col items-center animate-bounce">
+                        <div class="text-[11px] font-bold text-amber-800 uppercase tracking-widest">내가 품은 양사(量词)</div>
+                        <div class="ruby-large my-0.5" id="target-quantifier">
+                            <ruby>条<rt>tiáo</rt></ruby>
+                        </div>
+                        <div class="text-xs font-bold text-amber-900 bg-amber-200/80 px-2.5 py-0.5 rounded-full" id="target-hint">
+                            가늘고 긴 사물에 써요
+                        </div>
+                    </div>
+
+                    <!-- 곰돌이 SVG 일러스트 -->
+                    <div class="relative w-24 h-24 drop-shadow-xl" id="bear-sprite">
+                        <svg viewBox="0 0 100 100" class="w-full h-full">
+                            <!-- 귀 -->
+                            <circle cx="28" cy="28" r="14" fill="#8B5A2B" />
+                            <circle cx="28" cy="28" r="8" fill="#F4A460" />
+                            <circle cx="72" cy="28" r="14" fill="#8B5A2B" />
+                            <circle cx="72" cy="28" r="8" fill="#F4A460" />
+                            <!-- 머리 -->
+                            <circle cx="50" cy="50" r="34" fill="#A0522D" />
+                            <!-- 볼터치 -->
+                            <circle cx="32" cy="58" r="6" fill="#FF8080" opacity="0.6"/>
+                            <circle cx="68" cy="58" r="6" fill="#FF8080" opacity="0.6"/>
+                            <!-- 주둥이 -->
+                            <ellipse cx="50" cy="58" rx="17" ry="13" fill="#F4A460" />
+                            <!-- 코 -->
+                            <polygon points="50,54 44,48 56,48" fill="#3E2723" />
+                            <!-- 입 -->
+                            <path d="M46 58 Q50 63 54 58" stroke="#3E2723" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+                            <!-- 눈 -->
+                            <ellipse cx="38" cy="46" rx="4" ry="5.5" fill="#212121" />
+                            <ellipse cx="62" cy="46" rx="4" ry="5.5" fill="#212121" />
+                            <circle cx="36.5" cy="44" r="1.8" fill="#FFFFFF" />
+                            <circle cx="60.5" cy="44" r="1.8" fill="#FFFFFF" />
+                            <!-- 곰 손 (배를 잡는 포즈) -->
+                            <ellipse cx="25" cy="74" rx="8" ry="11" fill="#8B5A2B" transform="rotate(-15 25 74)" />
+                            <ellipse cx="75" cy="74" rx="8" ry="11" fill="#8B5A2B" transform="rotate(15 75 74)" />
+                        </svg>
+                        <div id="bear-bubble" class="absolute -top-6 -right-10 bg-white border-2 border-slate-700 text-xs px-2 py-0.5 rounded-full font-bold shadow hidden">
+                            폴짝!
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="relative flex-1 flex flex-col justify-end p-4 pb-6 river-bg overflow-hidden" id="river-stage">
+            <!-- 물결 레이어 장식 -->
+            <div class="absolute inset-0 pointer-events-none opacity-20">
+                <div class="absolute top-10 left-4 text-white text-3xl">〰️</div>
+                <div class="absolute top-24 right-10 text-white text-3xl">〰️</div>
+                <div class="absolute bottom-16 left-1/3 text-white text-3xl">〰️</div>
+            </div>
+
+            <!-- 안내 가이드 문구 -->
+            <div class="text-center mb-3">
+                <span class="inline-block bg-sky-900/60 backdrop-blur-sm text-sky-100 text-xs sm:text-sm font-bold px-4 py-1.5 rounded-full shadow">
+                    ⛵ 위 양사와 짝꿍인 <span class="text-amber-300 font-extrabold">명사 보트</span>를 터치해 태워주세요!
+                </span>
+            </div>
+
+            <!-- 보트 그리드 컨테이너 (3개의 선택지 보트) -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 relative z-20 w-full" id="boats-container">
+                <!-- 보트 버튼들이 JS로 동적 생성됩니다 -->
+            </div>
+
+            <!-- 거품 및 파티클 컨테이너 -->
+            <div id="effect-layer" class="absolute inset-0 pointer-events-none z-30"></div>
+        </div>
+
+        <!-- 하단 피드백 안내 바 (성공/실패 피드백) -->
+        <div id="feedback-banner" class="w-full bg-white/95 border-t-2 border-slate-200 py-3 px-4 text-center transition-all duration-300 hidden z-30 shadow-lg">
+            <div id="feedback-content" class="text-sm sm:text-base font-bold text-slate-800"></div>
+            <button id="next-stage-btn" class="mt-2 bg-amber-500 hover:bg-amber-600 active:scale-95 text-white font-game text-base px-6 py-2 rounded-xl shadow-md transition">
+                다음 강 건너기 ➔
+            </button>
+        </div>
+    </main>
+
+    <div id="result-modal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 text-center shadow-2xl border-4 border-amber-300 animate-scale">
+            <div class="text-6xl mb-2">🎉🐻⛵</div>
+            <h2 class="font-game text-2xl sm:text-3xl text-sky-900 mb-1">모든 강을 무사히 건넜어요!</h2>
+            <p class="text-sm text-slate-600 mb-5">8개의 중국어 양사를 완벽하게 매칭했습니다.</p>
+            
+            <div class="bg-sky-50 rounded-2xl p-4 border border-sky-100 mb-6 text-left space-y-2">
+                <div class="flex justify-between items-center text-sm">
+                    <span class="text-slate-600 font-bold">🎯 최종 점수</span>
+                    <span id="final-score" class="font-game text-xl text-sky-700">80점 / 80점</span>
+                </div>
+                <div class="flex justify-between items-center text-sm">
+                    <span class="text-slate-600 font-bold">⏱️ 소요 시간</span>
+                    <span id="final-time" class="font-game text-base text-amber-600">0분 00초</span>
+                </div>
+                <div class="flex justify-between items-center text-sm">
+                    <span class="text-slate-600 font-bold">🏅 정답률</span>
+                    <span id="final-accuracy" class="font-game text-base text-emerald-600">100%</span>
+                </div>
+            </div>
+
+            <!-- 학습한 8개 짝꿍 요약표 -->
+            <div class="max-h-48 overflow-y-auto bg-slate-50 rounded-xl p-3 border text-xs text-slate-700 mb-5 text-left divide-y divide-slate-200">
+                <div class="py-1 font-bold text-slate-500 mb-1">💡 오늘 마스터한 양사 공식:</div>
+                <div class="py-1">一<b>条</b>裙子 (치마 한 벌) - 가늘고 긴 모양</div>
+                <div class="py-1">一<b>个</b>人 (사람 한 명) - 일반적 개체/사람</div>
+                <div class="py-1">一<b>台</b>平板电脑 (태블릿 한 대) - 전자기기/기계</div>
+                <div class="py-1">一<b>支</b>笔 (펜 한 자루) - 막대/원통형 필기도구</div>
+                <div class="py-1">一<b>件</b>衣服 (옷 한 벌) - 윗옷/의류/사건</div>
+                <div class="py-1">一<b>瓶</b>牛奶 (우유 한 병) - 병에 든 액체</div>
+                <div class="py-1">一<b>斤</b>苹果 (사과 한 근) - 무게 단위(500g)</div>
+                <div class="py-1">一<b>双</b>鞋 (신발 한 켤레) - 짝을 이루는 물건</div>
+            </div>
+
+            <button onclick="restartGame()" class="w-full bg-sky-500 hover:bg-sky-600 text-white font-game text-lg py-3 rounded-2xl shadow-lg transition transform active:scale-95">
+                🔄 처음부터 다시 도전하기
+            </button>
+        </div>
+    </div>
+
+    <!-- 하단 사운드/음향 효과 및 안내 문구 -->
+    <footer class="text-xs text-sky-900 font-medium text-center opacity-80 my-1">
+        양사(量词)는 명사의 형태, 성질, 용도에 따라 알맞은 짝꿍을 써야 합니다.
+    </footer>
+
+    <script>
+        // 1. 문제 데이터 세트 (총 8개 양사 및 명사, 병음, 이모지 그림, 힌트)
+        const quantifierData = [
+            {
+                qHanzi: "条",
+                qPinyin: "tiáo",
+                hint: "가늘고 길거나 굽어 있는 사물",
+                correctNoun: {
+                    hanzi: "裙子",
+                    pinyin: "qúnzi",
+                    korean: "치마",
+                    icon: "👗"
+                },
+                explanation: "치마(裙子), 바지, 물고기, 길 등 길쭉한 사물에는 '条(tiáo)'를 씁니다."
+            },
+            {
+                qHanzi: "个",
+                qPinyin: "gè",
+                hint: "사람이나 일반적인 사물 개체",
+                correctNoun: {
+                    hanzi: "人",
+                    pinyin: "rén",
+                    korean: "사람",
+                    icon: "🧑"
+                },
+                explanation: "사람(人)이나 뚜렷한 전용 양사가 없을 때 가장 흔히 '个(gè)'를 씁니다."
+            },
+            {
+                qHanzi: "台",
+                qPinyin: "tái",
+                hint: "기계, 전자제품, 컴퓨터 장비",
+                correctNoun: {
+                    hanzi: "平板电脑",
+                    pinyin: "píngbǎn diànnǎo",
+                    korean: "태블릿 PC",
+                    icon: "💻"
+                },
+                explanation: "컴퓨터, 태블릿, TV, 기계 장비를 셀 때는 '台(tái)'를 씁니다."
+            },
+            {
+                qHanzi: "支",
+                qPinyin: "zhī",
+                hint: "원통형의 가늘고 곧은 펜·막대",
+                correctNoun: {
+                    hanzi: "笔",
+                    pinyin: "bǐ",
+                    korean: "펜, 연필",
+                    icon: "✏️"
+                },
+                explanation: "필기도구인 펜(笔)이나 가늘고 곧은 막대형 사물에는 '支(zhī)'를 씁니다."
+            },
+            {
+                qHanzi: "件",
+                qPinyin: "jiàn",
+                hint: "상의, 옷, 외투 및 일(사건)",
+                correctNoun: {
+                    hanzi: "衣服",
+                    pinyin: "yīfu",
+                    korean: "옷",
+                    icon: "👕"
+                },
+                explanation: "옷(衣服)이나 일(事情)을 한 건, 한 벌 셀 때는 '件(jiàn)'을 씁니다."
+            },
+            {
+                qHanzi: "瓶",
+                qPinyin: "píng",
+                hint: "병(Bottle)에 담긴 액체나 음료",
+                correctNoun: {
+                    hanzi: "牛奶",
+                    pinyin: "niúnǎi",
+                    korean: "우유",
+                    icon: "🥛"
+                },
+                explanation: "병에 든 우유(牛奶), 맥주, 생수 등의 용기 단위는 '瓶(píng)'을 씁니다."
+            },
+            {
+                qHanzi: "斤",
+                qPinyin: "jīn",
+                hint: "과일·고기 등의 무게 단위 (500g)",
+                correctNoun: {
+                    hanzi: "苹果",
+                    pinyin: "píngguǒ",
+                    korean: "사과",
+                    icon: "🍎"
+                },
+                explanation: "시장에서 사과(苹果), 과일, 채소의 무게를 달아 살 때는 '斤(jīn, 근)'을 씁니다."
+            },
+            {
+                qHanzi: "双",
+                qPinyin: "shuāng",
+                hint: "좌우 두 개가 한 짝을 이루는 사물",
+                correctNoun: {
+                    hanzi: "鞋",
+                    pinyin: "xié",
+                    korean: "신발",
+                    icon: "👟"
+                },
+                explanation: "신발(鞋), 젓가락, 양말, 장갑처럼 두 개가 한 쌍인 것에는 '双(shuāng)'을 씁니다."
+            }
+        ];
+
+        // 게임 상태 변수
+        let shuffledQuestions = [];
+        let currentIndex = 0;
+        let score = 0;
+        let totalAttempts = 0;
+        let isProcessing = false;
+        let startTime = null;
+
+        // 효과음 대용 웹 오디오 (무음 방지용 Synthesizer)
+        const audioCtx = (window.AudioContext || window.webkitAudioContext) ? new (window.AudioContext || window.webkitAudioContext)() : null;
+        function playTone(freq, type, duration) {
+            if (!audioCtx) return;
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch (e) {
+                // Ignore audio autoplay restrictions
+            }
+        }
+
+        function initGame() {
+            // 8개 문제를 무작위 셔플
+            shuffledQuestions = [...quantifierData].sort(() => Math.random() - 0.5);
+            currentIndex = 0;
+            score = 0;
+            totalAttempts = 0;
+            startTime = new Date();
+            
+            document.getElementById("result-modal").classList.add("hidden");
+            document.getElementById("next-stage-btn").onclick = nextRound;
+            
+            loadRound();
+        }
+
+        function loadRound() {
+            isProcessing = false;
+            const currentQ = shuffledQuestions[currentIndex];
+
+            // 상단 진행도 및 점수 갱신
+            document.getElementById("progress-text").innerText = `${currentIndex + 1} / ${shuffledQuestions.length}`;
+            document.getElementById("score-text").innerText = `${score}점`;
+
+            // 곰돌이 위치 및 투명도, 애니메이션 상태 완벽 리셋
+            const bearActor = document.getElementById("bear-actor");
+            bearActor.className = "relative transition-all duration-300 flex flex-col items-center cursor-pointer";
+            bearActor.style.transform = "none";
+            bearActor.style.opacity = "1";
+            bearActor.style.visibility = "visible";
+            document.getElementById("bear-bubble").classList.add("hidden");
+
+            // 양사 표지판 업데이트
+            document.getElementById("target-quantifier").innerHTML = `
+                <ruby>${currentQ.qHanzi}<rt>${currentQ.qPinyin}</rt></ruby>
+            `;
+            document.getElementById("target-hint").innerText = currentQ.hint;
+
+            // 피드백 배너 숨김
+            document.getElementById("feedback-banner").classList.add("hidden");
+
+            // 보기 보트 3개 선정 (정답 1개 + 오답 2개)
+            const otherNouns = quantifierData
+                .filter(item => item.correctNoun.hanzi !== currentQ.correctNoun.hanzi)
+                .map(item => item.correctNoun);
+            const shuffledOthers = otherNouns.sort(() => Math.random() - 0.5).slice(0, 2);
+            
+            const boatOptions = [
+                { ...currentQ.correctNoun, isCorrect: true },
+                { ...shuffledOthers[0], isCorrect: false },
+                { ...shuffledOthers[1], isCorrect: false }
+            ].sort(() => Math.random() - 0.5);
+
+            // 보트 렌더링
+            renderBoats(boatOptions, currentQ);
+        }
+
+        function renderBoats(boatOptions, currentQ) {
+            const container = document.getElementById("boats-container");
+            container.innerHTML = "";
+
+            boatOptions.forEach((option, index) => {
+                const boatWrap = document.createElement("div");
+                boatWrap.className = "flex flex-col items-center animate-boat w-full";
+                boatWrap.style.animationDelay = `${index * 0.35}s`;
+
+                // 보트 버튼 엘리먼트 (SVG 돛단배 외형)
+                const boatBtn = document.createElement("button");
+                boatBtn.className = "boat-btn group relative w-full bg-transparent border-0 p-0 cursor-pointer outline-none transition-transform hover:scale-[1.03] active:scale-95";
+                
+                boatBtn.innerHTML = `
+                    <div class="relative w-full max-w-[210px] mx-auto boat-hull-shadow flex flex-col items-center">
+                        
+                        <!-- 1. 돛단배 상단: 돛(Sail)과 깃발, 명사 아이콘 -->
+                        <div class="relative z-10 flex flex-col items-center -mb-2">
+                            <!-- 깃발 -->
+                            <div class="bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-md flex items-center gap-1 mb-1">
+                                <span>🚩</span> <span>보트 ${index + 1}</span>
+                            </div>
+
+                            <!-- 메인 삼각 돛(Sail) 배경 & 명사 이모지 -->
+                            <div class="relative w-28 h-20 flex items-center justify-center">
+                                <svg class="absolute inset-0 w-full h-full" viewBox="0 0 100 80" preserveAspectRatio="none">
+                                    <path d="M50 0 L92 70 L50 65 Z" fill="#ffffff" stroke="#cbd5e1" stroke-width="2"/>
+                                    <path d="M48 6 L12 70 L48 65 Z" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/>
+                                    <!-- 돛대 기둥 -->
+                                    <rect x="48" y="0" width="4" height="78" fill="#78350f" rx="1.5"/>
+                                </svg>
+                                <!-- 명사 대표 그림 (이모지) -->
+                                <div class="relative z-10 text-4xl sm:text-5xl drop-shadow transform group-hover:scale-110 transition duration-200">
+                                    ${option.icon}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 2. 돛단배 선체(Wooden Hull): 명사 한자 및 병음 적재 -->
+                        <div class="relative w-full">
+                            <!-- 나무 배 선체 SVG 베이스 -->
+                            <svg viewBox="0 0 240 105" class="w-full h-auto drop-shadow-lg">
+                                <defs>
+                                    <linearGradient id="woodGrad-${index}" x1="0%" y1="0%" x2="0%" y2="100%">
+                                        <stop offset="0%" stop-color="#d97706"/>
+                                        <stop offset="30%" stop-color="#b45309"/>
+                                        <stop offset="100%" stop-color="#78350f"/>
+                                    </linearGradient>
+                                </defs>
+                                <!-- 선체 형태 -->
+                                <path d="M12 28 Q4 62 48 94 Q120 106 192 94 Q236 62 228 28 Q180 34 120 34 Q60 34 12 28 Z" 
+                                      fill="url(#woodGrad-${index})" stroke="#451a03" stroke-width="4"/>
+                                <!-- 갑판 나무결 라인 -->
+                                <path d="M26 44 Q120 52 214 44" stroke="#f59e0b" stroke-width="2.5" fill="none" opacity="0.6"/>
+                                <path d="M38 64 Q120 74 202 64" stroke="#f59e0b" stroke-width="2.5" fill="none" opacity="0.6"/>
+                                <path d="M56 82 Q120 90 184 82" stroke="#f59e0b" stroke-width="2" fill="none" opacity="0.5"/>
+                            </svg>
+
+                            <!-- 선체 위 탑승 구역 (명사 루비 한자/병음/뜻 푯말) -->
+                            <div class="absolute inset-0 pt-7 px-3 flex flex-col items-center justify-center text-center">
+                                <div class="bg-amber-50/95 backdrop-blur-sm border-2 border-amber-900/40 rounded-xl px-2.5 py-1 shadow-inner w-[88%]">
+                                    <div class="ruby-boat -my-0.5">
+                                        <ruby>${option.hanzi}<rt>${option.pinyin}</rt></ruby>
+                                    </div>
+                                    <div class="text-[11px] sm:text-xs font-bold text-amber-950 truncate">
+                                        ${option.korean}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 3. 물결 파도 및 탑승 가이드 -->
+                        <div class="w-full flex justify-center -mt-2">
+                            <span class="bg-sky-800/80 group-hover:bg-amber-600 text-white text-[10px] font-bold px-3 py-0.5 rounded-full shadow transition">
+                                ⛵ 이 배 타기
+                            </span>
+                        </div>
+
+                        <!-- 곰돌이가 탑승할 선상 슬롯 (정답 시 곰 표시) -->
+                        <div class="passenger-slot absolute -top-8 left-1/2 -translate-x-1/2 w-16 h-16 pointer-events-none opacity-0 transition-opacity duration-300 z-20"></div>
+
+                    </div>
+                `;
+
+                boatBtn.onclick = (e) => handleBoatSelect(boatBtn, option, currentQ);
+                boatWrap.appendChild(boatBtn);
+                container.appendChild(boatWrap);
+            });
+        }
+
+        function handleBoatSelect(selectedBoat, option, currentQ) {
+            if (isProcessing) return;
+            isProcessing = true;
+            totalAttempts++;
+
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+
+            // 모든 보트 클릭 비활성화
+            document.querySelectorAll(".boat-btn").forEach(btn => btn.disabled = true);
+
+            // 곰돌이와 선택한 보트의 위치 좌표 계산
+            const bearActor = document.getElementById("bear-actor");
+            const bearRect = bearActor.getBoundingClientRect();
+            const boatRect = selectedBoat.getBoundingClientRect();
+
+            const deltaX = (boatRect.left + boatRect.width / 2) - (bearRect.left + bearRect.width / 2);
+            const deltaY = (boatRect.top + 30) - bearRect.top;
+
+            bearActor.style.setProperty('--target-x', `${deltaX}px`);
+            bearActor.style.setProperty('--target-y', `${deltaY}px`);
+
+            if (option.isCorrect) {
+                // [정답 시나리오] 곰돌이가 배 갑판으로 폴짝 탑승 후, 함께 강을 건너 이동
+                playTone(440, 'sine', 0.1);
+                setTimeout(() => playTone(659.25, 'triangle', 0.25), 350);
+                
+                bearActor.classList.add("jumping-bear");
+                document.getElementById("bear-bubble").innerText = "배 탑승 완료! ⛵";
+                document.getElementById("bear-bubble").classList.remove("hidden");
+
+                setTimeout(() => {
+                    createWaterSplash(boatRect.left + boatRect.width / 2, boatRect.top + 50);
+                }, 400);
+
+                setTimeout(() => {
+                    // 아기곰을 보트 위 승객 슬롯으로 자연스럽게 탑승 복제 후 원래 상단 곰 숨김
+                    const passengerSlot = selectedBoat.querySelector('.passenger-slot');
+                    if (passengerSlot) {
+                        passengerSlot.innerHTML = `
+                            <svg viewBox="0 0 100 100" class="w-full h-full drop-shadow">
+                                <circle cx="28" cy="30" r="12" fill="#8B5A2B"/>
+                                <circle cx="72" cy="30" r="12" fill="#8B5A2B"/>
+                                <circle cx="50" cy="50" r="30" fill="#A0522D"/>
+                                <ellipse cx="50" cy="58" rx="15" ry="11" fill="#F4A460"/>
+                                <polygon points="50,54 45,49 55,49" fill="#3E2723"/>
+                                <ellipse cx="39" cy="46" rx="3.5" ry="5" fill="#212121"/>
+                                <ellipse cx="61" cy="46" rx="3.5" ry="5" fill="#212121"/>
+                            </svg>
+                        `;
+                        passengerSlot.classList.remove('opacity-0');
+                        passengerSlot.classList.add('opacity-100');
+                    }
+                    bearActor.style.opacity = "0";
+
+                    // 배가 아기곰을 싣고 강을 건너 출항 (Sailing Across River)
+                    selectedBoat.parentElement.classList.remove("animate-boat");
+                    selectedBoat.parentElement.classList.add("sailing-across");
+
+                    score += 10;
+                    document.getElementById("score-text").innerText = `${score}점`;
+
+                    showFeedback(true, `
+                        <div class="text-emerald-700 font-extrabold text-lg mb-1">🎉 짝꿍 정답! 배를 타고 강을 건넜어요!</div>
+                        <div>한 짝: 一<b>${currentQ.qHanzi}</b>${option.hanzi} (${currentQ.qPinyin} ${option.pinyin})</div>
+                        <div class="text-xs text-slate-500 mt-1">${currentQ.explanation}</div>
+                    `);
+                }, 850);
+
+            } else {
+                // [오답 시나리오] 곰돌이가 배로 점프했으나 배가 뒤뚱거리며 가라앉음
+                playTone(330, 'sine', 0.1);
+                setTimeout(() => playTone(150, 'sawtooth', 0.4), 400);
+
+                bearActor.classList.add("jumping-bear");
+                document.getElementById("bear-bubble").innerText = "배가 가라앉아요! 💦";
+                document.getElementById("bear-bubble").classList.remove("hidden");
+
+                setTimeout(() => {
+                    // 보트 가라앉기 (Sinking)
+                    selectedBoat.classList.add("sinking");
+                    createBubbles(boatRect.left + boatRect.width / 2, boatRect.top + 60);
+                }, 450);
+
+                setTimeout(() => {
+                    showFeedback(false, `
+                        <div class="text-rose-600 font-extrabold text-lg mb-1">🌊 앗! 배가 가라앉았어요!</div>
+                        <div>'${option.hanzi}(${option.pinyin})'에는 양사 <b>${currentQ.qHanzi}</b>를 쓰지 않아요!</div>
+                        <div class="text-xs text-slate-600 mt-1">힌트: <b>${currentQ.hint}</b></div>
+                    `);
+                }, 1000);
+            }
+        }
+
+        function createWaterSplash(x, y) {
+            const effectLayer = document.getElementById("effect-layer");
+            for (let i = 0; i < 8; i++) {
+                const splash = document.createElement("div");
+                splash.className = "absolute text-xl pointer-events-none";
+                splash.style.left = `${x + (Math.random() * 60 - 30)}px`;
+                splash.style.top = `${y + (Math.random() * 30 - 15)}px`;
+                splash.innerText = "💦";
+                splash.style.animation = "bubbleUp 0.6s ease-out forwards";
+                effectLayer.appendChild(splash);
+                setTimeout(() => splash.remove(), 700);
+            }
+        }
+
+        function createBubbles(x, y) {
+            const effectLayer = document.getElementById("effect-layer");
+            for (let i = 0; i < 6; i++) {
+                const bubble = document.createElement("div");
+                bubble.className = "absolute rounded-full border-2 border-white bg-sky-200/50 bubble pointer-events-none";
+                const size = 12 + Math.random() * 16;
+                bubble.style.width = `${size}px`;
+                bubble.style.height = `${size}px`;
+                bubble.style.left = `${x + (Math.random() * 80 - 40)}px`;
+                bubble.style.top = `${y + (Math.random() * 40 - 20)}px`;
+                bubble.style.animationDelay = `${i * 0.1}s`;
+                effectLayer.appendChild(bubble);
+                setTimeout(() => bubble.remove(), 900);
+            }
+        }
+
+        function showFeedback(isSuccess, htmlContent) {
+            const banner = document.getElementById("feedback-banner");
+            const content = document.getElementById("feedback-content");
+            const btn = document.getElementById("next-stage-btn");
+
+            content.innerHTML = htmlContent;
+            banner.classList.remove("hidden");
+
+            if (isSuccess) {
+                btn.className = "mt-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-game text-base px-6 py-2 rounded-xl shadow-md transition";
+                btn.innerText = (currentIndex === shuffledQuestions.length - 1) ? "최종 결과 확인 ➔" : "다음 강 건너기 ➔";
+            } else {
+                btn.className = "mt-2 bg-rose-500 hover:bg-rose-600 active:scale-95 text-white font-game text-base px-6 py-2 rounded-xl shadow-md transition";
+                btn.innerText = "다시 도전하기 🔄";
+            }
+        }
+
+        function nextRound() {
+            const currentQ = shuffledQuestions[currentIndex];
+            const banner = document.getElementById("feedback-banner");
+            banner.classList.add("hidden");
+
+            // 틀려서 '다시 도전하기'를 누른 경우 현재 라운드 다시 풀기
+            const lastAttemptSuccess = (document.getElementById("feedback-content").innerText.includes("성공") || 
+                                        document.getElementById("feedback-content").innerText.includes("정답"));
+
+            if (lastAttemptSuccess) {
+                currentIndex++;
+                if (currentIndex >= shuffledQuestions.length) {
+                    showFinalResults();
+                    return;
+                }
+            }
+            loadRound();
+        }
+
+        function showFinalResults() {
+            const endTime = new Date();
+            const elapsedSeconds = Math.max(1, Math.floor((endTime - startTime) / 1000));
+            const mins = Math.floor(elapsedSeconds / 60);
+            const secs = elapsedSeconds % 60;
+            const timeStr = mins > 0 ? `${mins}분 ${secs}초` : `${secs}초`;
+
+            const accuracy = Math.round((shuffledQuestions.length / totalAttempts) * 100);
+
+            document.getElementById("final-score").innerText = `${score}점 / 80점`;
+            document.getElementById("final-time").innerText = timeStr;
+            document.getElementById("final-accuracy").innerText = `${accuracy}% (시도: ${totalAttempts}회)`;
+
+            document.getElementById("result-modal").classList.remove("hidden");
+            playTone(523.25, 'triangle', 0.2);
+            setTimeout(() => playTone(659.25, 'triangle', 0.2), 200);
+            setTimeout(() => playTone(783.99, 'triangle', 0.4), 400);
+        }
+
+        function restartGame() {
+            initGame();
+        }
+
+        // 윈도우 로드 시 자동 실행
+        window.onload = initGame;
+    </script>
+</body>
+</html>
